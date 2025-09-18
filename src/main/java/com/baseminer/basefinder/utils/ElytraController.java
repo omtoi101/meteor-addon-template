@@ -41,7 +41,7 @@ public class ElytraController {
     }
 
     public static void onChatMessage(String message) {
-        if (active && message.contains("arrived at destination")) {
+        if (active && message.contains("At Destination. Landing.")) {
             flyToNextWaypoint();
         }
     }
