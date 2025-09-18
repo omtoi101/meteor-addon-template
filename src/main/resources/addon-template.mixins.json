@@ -1,9 +1,10 @@
 {
   "required": true,
-  "package": "com.example.addon.mixin",
+  "package": "com.baseminer.basefinder.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ExampleMixin"
+    "ExampleMixin",
+    "PlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

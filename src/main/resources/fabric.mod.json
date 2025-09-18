@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "addon-template",
+  "id": "base-finder",
   "version": "${version}",
-  "name": "Addon Template",
-  "description": "An addon template for Meteor Client addons.",
+  "name": "Base Finder",
+  "description": "A Meteor client addon for finding bases on anarchy servers.",
   "authors": [
-    "seasnail"
+    "YourName"
   ],
   "contact": {
     "sources": "https://github.com/MeteorDevelopment/meteor-addon-template"
@@ -14,7 +14,7 @@
   "environment": "client",
   "entrypoints": {
     "meteor": [
-      "com.example.addon.AddonTemplate"
+      "com.baseminer.basefinder.BaseFinder"
     ]
   },
   "mixins": [
