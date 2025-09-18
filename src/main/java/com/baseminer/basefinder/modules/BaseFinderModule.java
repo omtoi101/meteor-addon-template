@@ -7,8 +7,6 @@ import com.baseminer.basefinder.utils.DiscordEmbed;
 import com.baseminer.basefinder.utils.DiscordWebhook;
 import com.baseminer.basefinder.utils.ElytraController;
 import com.baseminer.basefinder.utils.WorldScanner;
-import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
-import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -19,9 +17,9 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BaseFinderModule extends Module {
     // Settings
@@ -107,9 +105,8 @@ public class BaseFinderModule extends Module {
     );
 
     // State
-    private final Map<PlayerEntity, Long> reportedPlayers = new HashMap<>();
+    private final Map<PlayerEntity, Long> reportedPlayers = new ConcurrentHashMap<>();
     private final List<BlockPos> reportedBases = new ArrayList<>();
-    private final List<BlockPos> valuableBlocksInRange = new ArrayList<>();
     private int tickCounter = 0;
 
 
@@ -120,6 +117,7 @@ public class BaseFinderModule extends Module {
     @Override
     public void onActivate() {
         reportedPlayers.clear();
+        reportedBases.clear();
     }
 
     @Override
@@ -136,39 +134,11 @@ public class BaseFinderModule extends Module {
     }
 
     /**
-     * Scans for valuable blocks in the render thread.
-     * This is done on the render thread to leverage the game's existing block entity iteration, which is more performant.
-     * The scan is throttled by the scanInterval setting to avoid performance issues.
-     */
-    @EventHandler
-    private void onRender(Render3DEvent event) {
-        if (mc.player == null || mc.world == null) return;
-        if (tickCounter % scanInterval.get() != 0) return;
-
-        valuableBlocksInRange.clear();
-        mc.world.getBlockEntities().forEach(blockEntity -> {
-            if (Config.valuableBlocks.contains(blockEntity.getCachedState().getBlock())) {
-                if (blockEntity.getPos().isWithinDistance(mc.player.getPos(), scanRadius.get())) {
-                    valuableBlocksInRange.add(blockEntity.getPos());
-                }
-            }
-        });
-    }
-
-    /**
-     * Handles chat messages for elytra pilot and death detection.
-     */
-    @EventHandler
-    private void onReceiveMessage(ReceiveMessageEvent event) {
-        // Empty for now
-    }
-
-    /**
      * Handles player death events.
      */
     @EventHandler
     private void onPlayerDeath(PlayerDeathEvent event) {
-        if (notifyOnDeath.get() && event.player == mc.player) {
+        if (notifyOnDeath.get() && event.player != null && event.player.equals(mc.player)) {
             DiscordEmbed embed = new DiscordEmbed("Bot Died!", "Coordinates: " + event.player.getBlockPos().toShortString(), 0xFF0000);
             DiscordWebhook.sendMessage("@everyone", embed);
         }
@@ -186,7 +156,54 @@ public class BaseFinderModule extends Module {
             return;
         }
 
-        // Base scanning logic
+        // Scan for blocks every scanInterval ticks
+        if (tickCounter % scanInterval.get() == 0) {
+            scanForBlocks();
+        }
+
+        // Player detection logic
+        if (playerDetection.get()) {
+            for (PlayerEntity player : mc.world.getPlayers()) {
+                if (player == null || player.equals(mc.player)) {
+                    continue;
+                }
+
+                if (mc.player.distanceTo(player) < 100) {
+                    if (!reportedPlayers.containsKey(player) || System.currentTimeMillis() - reportedPlayers.get(player) > 300000) { // 5 minute cooldown
+                        DiscordEmbed embed = new DiscordEmbed("Player Detected!", "Player: " + player.getName().getString() + "\nCoordinates: " + player.getBlockPos().toShortString(), 0xFFFF00);
+                        DiscordWebhook.sendMessage("", embed);
+                        reportedPlayers.put(player, System.currentTimeMillis());
+                    }
+                }
+            }
+        }
+
+        // Clean up old reported players
+        if (tickCounter % 1200 == 0) { // Every minute
+            reportedPlayers.entrySet().removeIf(entry -> System.currentTimeMillis() - entry.getValue() > 300000);
+        }
+
+        // Clean up old reported bases
+        if (tickCounter % 12000 == 0) { // Every 10 minutes
+            reportedBases.clear();
+        }
+    }
+
+    private void scanForBlocks() {
+        if (mc.player == null || mc.world == null) return;
+        List<BlockPos> valuableBlocksInRange = new ArrayList<>();
+        try {
+            mc.world.getBlockEntities().forEach(blockEntity -> {
+                if (blockEntity != null && blockEntity.getCachedState() != null && Config.valuableBlocks.contains(blockEntity.getCachedState().getBlock())) {
+                    if (blockEntity.getPos().isWithinDistance(mc.player.getPos(), scanRadius.get())) {
+                        valuableBlocksInRange.add(blockEntity.getPos());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            // Ignore any exceptions during scanning
+        }
+
         if (valuableBlocksInRange.size() >= blockDetectionThreshold.get()) {
             BlockPos basePos = valuableBlocksInRange.get(0);
             boolean alreadyReported = false;
@@ -222,32 +239,15 @@ public class BaseFinderModule extends Module {
                 }
 
                 String description = "Coordinates: " + coords + "\n" +
-                                     "Found " + valuableBlocksInRange.size() + " valuable blocks.\n" +
-                                     "Volume: " + String.format("%.2f", volume) + " blocks\n" +
-                                     "Density: " + String.format("%.4f", density) + "\n" +
-                                     "Rating: " + rating + "\n\n" +
-                                     "Container List:\n" + containerList.toString();
+                    "Found " + valuableBlocksInRange.size() + " valuable blocks.\n" +
+                    "Volume: " + String.format("%.2f", volume) + " blocks\n" +
+                    "Density: " + String.format("%.4f", density) + "\n" +
+                    "Rating: " + rating + "\n\n" +
+                    "Container List:\n" + containerList.toString();
 
                 DiscordEmbed embed = new DiscordEmbed("Base Found!", description, 0x00FF00);
                 DiscordWebhook.sendMessage("@everyone", embed);
                 info("Base found at: " + coords);
-            }
-        }
-
-        // Player detection logic
-        if (playerDetection.get()) {
-            for (PlayerEntity player : mc.world.getPlayers()) {
-                if (player == mc.player) {
-                    continue;
-                }
-
-                if (mc.player.distanceTo(player) < 100) {
-                    if (!reportedPlayers.containsKey(player) || System.currentTimeMillis() - reportedPlayers.get(player) > 300000) { // 5 minute cooldown
-                        DiscordEmbed embed = new DiscordEmbed("Player Detected!", "Player: " + player.getName().getString() + "\nCoordinates: " + player.getBlockPos().toShortString(), 0xFFFF00);
-                        DiscordWebhook.sendMessage("", embed);
-                        reportedPlayers.put(player, System.currentTimeMillis());
-                    }
-                }
             }
         }
     }
