@@ -5,10 +5,13 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.commands.Command;
 import net.minecraft.command.CommandSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 
 public class BaseFinderCommand extends Command {
+    private static final Logger LOG = LoggerFactory.getLogger(BaseFinderCommand.class);
     public BaseFinderCommand() {
         super("basefinder", "Starts the base finding process.");
     }
@@ -25,7 +28,9 @@ public class BaseFinderCommand extends Command {
                             int x2 = IntegerArgumentType.getInteger(context, "x2");
                             int z2 = IntegerArgumentType.getInteger(context, "z2");
 
-                            info("Starting base finding process from (" + x1 + ", " + z1 + ") to (" + x2 + ", " + z2 + ")");
+                            String message = String.format("Starting base finding process from (%d, %d) to (%d, %d)", x1, z1, x2, z2);
+                            LOG.info(message);
+                            info(message);
                             ElytraController.start(x1, z1, x2, z2, 100);
                             return SINGLE_SUCCESS;
                         })

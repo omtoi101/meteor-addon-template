@@ -27,6 +27,9 @@ dependencies {
 
     // Meteor
     modImplementation("meteordevelopment:meteor-client:${properties["minecraft_version"] as String}-SNAPSHOT")
+
+    // Logging
+    modImplementation("ch.qos.logback:logback-classic:1.3.12")
 }
 
 tasks {

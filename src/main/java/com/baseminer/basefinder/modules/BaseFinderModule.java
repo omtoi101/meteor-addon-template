@@ -11,6 +11,8 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BaseFinderModule extends Module {
+    private static final Logger LOG = LoggerFactory.getLogger(BaseFinderModule.class);
     // Settings
     private final SettingGroup sgGeneral = this.settings.getDefaultGroup();
 
@@ -116,12 +119,14 @@ public class BaseFinderModule extends Module {
 
     @Override
     public void onActivate() {
+        LOG.info("Activating Base Finder module.");
         reportedPlayers.clear();
         reportedBases.clear();
     }
 
     @Override
     public void onDeactivate() {
+        LOG.info("Deactivating Base Finder module.");
         ElytraController.stop();
     }
 
@@ -139,6 +144,7 @@ public class BaseFinderModule extends Module {
     @EventHandler
     private void onPlayerDeath(PlayerDeathEvent event) {
         if (notifyOnDeath.get() && event.player != null && event.player.equals(mc.player)) {
+            LOG.info("Player died at {}.", event.player.getBlockPos().toShortString());
             DiscordEmbed embed = new DiscordEmbed("Bot Died!", "Coordinates: " + event.player.getBlockPos().toShortString(), 0xFF0000);
             DiscordWebhook.sendMessage("@everyone", embed);
         }
@@ -170,6 +176,7 @@ public class BaseFinderModule extends Module {
 
                 if (mc.player.distanceTo(player) < 100) {
                     if (!reportedPlayers.containsKey(player) || System.currentTimeMillis() - reportedPlayers.get(player) > 300000) { // 5 minute cooldown
+                        LOG.info("Player {} detected at {}.", player.getName().getString(), player.getBlockPos().toShortString());
                         DiscordEmbed embed = new DiscordEmbed("Player Detected!", "Player: " + player.getName().getString() + "\nCoordinates: " + player.getBlockPos().toShortString(), 0xFFFF00);
                         DiscordWebhook.sendMessage("", embed);
                         reportedPlayers.put(player, System.currentTimeMillis());
@@ -245,9 +252,9 @@ public class BaseFinderModule extends Module {
                     "Rating: " + rating + "\n\n" +
                     "Container List:\n" + containerList.toString();
 
+                LOG.info("Base found at: {}. Details:\n{}", coords, description);
                 DiscordEmbed embed = new DiscordEmbed("Base Found!", description, 0x00FF00);
                 DiscordWebhook.sendMessage("@everyone", embed);
-                info("Base found at: " + coords);
             }
         }
     }
