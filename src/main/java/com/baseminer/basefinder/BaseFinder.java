@@ -3,6 +3,7 @@ package com.baseminer.basefinder;
 import com.baseminer.basefinder.utils.Config;
 import com.baseminer.basefinder.commands.BaseFinderCommand;
 import com.baseminer.basefinder.commands.ClearBasesCommand;
+import com.baseminer.basefinder.commands.ClearPlayersCommand;
 import com.baseminer.basefinder.hud.BaseFinderHud;
 import com.baseminer.basefinder.modules.BaseFinderModule;
 import com.mojang.logging.LogUtils;
@@ -33,6 +34,7 @@ public class BaseFinder extends MeteorAddon {
         // Commands
         Commands.add(new BaseFinderCommand());
         Commands.add(new ClearBasesCommand());
+        Commands.add(new ClearPlayersCommand());
 
         // HUD
         Hud.get().register(BaseFinderHud.INFO);

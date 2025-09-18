@@ -5,10 +5,10 @@
   "name": "Base Finder",
   "description": "A Meteor client addon for finding bases on anarchy servers.",
   "authors": [
-    "YourName"
+    "Jules"
   ],
   "contact": {
-    "sources": "https://github.com/MeteorDevelopment/meteor-addon-template"
+    "sources": "https://github.com/YourGithub/base-finder"
   },
   "icon": "assets/template/icon.png",
   "environment": "client",

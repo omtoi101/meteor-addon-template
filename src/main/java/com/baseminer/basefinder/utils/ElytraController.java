@@ -19,11 +19,11 @@ public class ElytraController {
         boolean forward = true;
         for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x += stripWidth) {
             if (forward) {
-                waypoints.add(new Vec3d(x, 350, z1));
-                waypoints.add(new Vec3d(x, 350, z2));
+                waypoints.add(new Vec3d(x, Config.flightAltitude, z1));
+                waypoints.add(new Vec3d(x, Config.flightAltitude, z2));
             } else {
-                waypoints.add(new Vec3d(x, 350, z2));
-                waypoints.add(new Vec3d(x, 350, z1));
+                waypoints.add(new Vec3d(x, Config.flightAltitude, z2));
+                waypoints.add(new Vec3d(x, Config.flightAltitude, z1));
             }
             forward = !forward;
         }
@@ -40,8 +40,16 @@ public class ElytraController {
         }
     }
 
-    public static void onChatMessage(String message) {
-        if (active && message.contains("At Destination. Landing.")) {
+    public static void onTick() {
+        if (!active || MeteorClient.mc.player == null) return;
+
+        if (currentWaypoint >= waypoints.size()) {
+            stop();
+            return;
+        }
+
+        Vec3d target = waypoints.get(currentWaypoint);
+        if (MeteorClient.mc.player.getPos().distanceTo(target) < 10) {
             flyToNextWaypoint();
         }
     }

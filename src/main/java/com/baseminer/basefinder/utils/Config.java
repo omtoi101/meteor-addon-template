@@ -19,7 +19,9 @@ public class Config {
 
     public static String discordWebhookUrl = "";
     public static int blockDetectionThreshold = 10;
-    public static int scanRadius = 32;
+    public static int scanRadius = 256;
+    public static int flightAltitude = 350;
+    public static int scanInterval = 20;
     public static List<Block> valuableBlocks = new ArrayList<>(Arrays.asList(
             Blocks.CHEST,
             Blocks.TRAPPED_CHEST,
@@ -51,7 +53,9 @@ public class Config {
                 properties.load(fis);
                 discordWebhookUrl = properties.getProperty("discordWebhookUrl", "");
                 blockDetectionThreshold = Integer.parseInt(properties.getProperty("blockDetectionThreshold", "10"));
-                scanRadius = Integer.parseInt(properties.getProperty("scanRadius", "32"));
+                scanRadius = Integer.parseInt(properties.getProperty("scanRadius", "256"));
+                flightAltitude = Integer.parseInt(properties.getProperty("flightAltitude", "350"));
+                scanInterval = Integer.parseInt(properties.getProperty("scanInterval", "20"));
                 playerDetection = Boolean.parseBoolean(properties.getProperty("playerDetection", "true"));
                 notifyOnDeath = Boolean.parseBoolean(properties.getProperty("notifyOnDeath", "true"));
                 // valuableBlocks are not configurable for now, to keep it simple
@@ -68,6 +72,8 @@ public class Config {
             properties.setProperty("discordWebhookUrl", discordWebhookUrl);
             properties.setProperty("blockDetectionThreshold", String.valueOf(blockDetectionThreshold));
             properties.setProperty("scanRadius", String.valueOf(scanRadius));
+            properties.setProperty("flightAltitude", String.valueOf(flightAltitude));
+            properties.setProperty("scanInterval", String.valueOf(scanInterval));
             properties.setProperty("playerDetection", String.valueOf(playerDetection));
             properties.setProperty("notifyOnDeath", String.valueOf(notifyOnDeath));
             properties.store(fos, "Base Finder Configuration");
